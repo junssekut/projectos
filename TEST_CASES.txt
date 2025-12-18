@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Test input for the scheduler program
+# This file demonstrates how to use the scheduler with sample processes
+
+cat << 'EOF'
+Sample Test Cases:
+==================
+
+Test Case 1: Simple 3 Processes
+  Number of processes: 3
+  
+  Process 1: Arrival=0, Burst=8
+  Process 2: Arrival=1, Burst=4
+  Process 3: Arrival=2, Burst=2
+
+Test Case 2: Mixed Arrival Times
+  Number of processes: 4
+  
+  Process 1: Arrival=0, Burst=5
+  Process 2: Arrival=1, Burst=3
+  Process 3: Arrival=2, Burst=8
+  Process 4: Arrival=3, Burst=6
+
+Test Case 3: All Same Burst Time
+  Number of processes: 4
+  
+  Process 1: Arrival=0, Burst=5
+  Process 2: Arrival=0, Burst=5
+  Process 3: Arrival=0, Burst=5
+  Process 4: Arrival=0, Burst=5
+
+To run interactively:
+  ./scheduler
+
+To run with piped input:
+  (echo 3; echo 0; echo 8; echo 1; echo 4; echo 2; echo 2; echo 1; echo 2) | ./scheduler
+
+EOF
