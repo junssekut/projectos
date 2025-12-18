@@ -3,18 +3,32 @@
 
 ---
 
-## 1. Pembukaan (0:00 - 0:30)
+## 1. Pembukaan & Pengenalan WSL (0:00 - 1:00)
 
 **Script:**
 > "Halo semuanya! Di video ini saya akan mendemonstrasikan program simulasi penjadwalan proses CPU menggunakan bahasa C."
+
+### Brief tentang WSL
+
+**Script:**
+> "Program ini saya jalankan di WSL atau Windows Subsystem for Linux. Untuk yang belum tahu, WSL adalah fitur Windows yang memungkinkan kita menjalankan Linux langsung di Windows tanpa virtual machine."
 >
+> "Instalasi WSL cukup mudah:"
+> 1. "Buka PowerShell sebagai Administrator"
+> 2. "Jalankan: `wsl --install`"
+> 3. "Tunggu selesai dan restart komputer"
+> 4. "Set username dan password"
+> 5. "Install gcc dan make dengan: `sudo apt install gcc make -y`"
+
+> "Setelah itu, kita bisa compile dan jalankan program C di WSL seperti di Linux."
+
 > "Program ini mengimplementasikan 4 algoritma: FCFS, SJF, SRT, dan Round Robin."
 
 [Tampilkan judul video / intro]
 
 ---
 
-## 2. Penjelasan Singkat Algoritma (0:30 - 2:30)
+## 2. Penjelasan Singkat Algoritma (1:00 - 3:00)
 
 **Script:**
 > "Sebelum demo, saya jelaskan singkat keempat algoritma ini."
@@ -35,14 +49,14 @@
 
 ---
 
-## 3. Demo Program (2:30 - 7:30)
+## 3. Demo Program (3:00 - 8:00)
 
 **Script:**
 > "Sekarang langsung ke demo program."
 
 [Buka terminal, jalankan program]
 
-### 3.1 Input Data (2:30 - 3:30)
+### 3.1 Input Data (3:00 - 4:00)
 
 **Script:**
 > "Saya masukkan 4 proses dengan data berikut:"
@@ -60,7 +74,7 @@ P4: AT = 3, BT = 5
 
 ---
 
-### 3.2 Jalankan Semua Algoritma (3:30 - 7:00)
+### 3.2 Jalankan Semua Algoritma (4:00 - 7:30)
 
 **Script:**
 > "Saya pilih opsi 5 untuk menjalankan semua algoritma sekaligus."
@@ -83,7 +97,7 @@ P4: AT = 3, BT = 5
 
 ---
 
-### 3.3 Tunjukkan Kode Singkat (7:00 - 7:30)
+### 3.3 Tunjukkan Kode Singkat (7:30 - 8:00)
 
 **Script:**
 > "Sekilas struktur kode yang saya gunakan."
@@ -107,7 +121,7 @@ typedef struct {
 
 ---
 
-## 4. Perbandingan Hasil (7:30 - 9:00)
+## 4. Perbandingan Hasil (8:00 - 9:00)
 
 **Script:**
 > "Mari kita bandingkan hasil keempat algoritma."
