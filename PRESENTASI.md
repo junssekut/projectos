@@ -20,7 +20,9 @@
 > 4. "Set username dan password"
 > 5. "Install gcc dan make dengan: `sudo apt install gcc make -y`"
 
-> "Setelah itu, kita bisa compile dan jalankan program C di WSL seperti di Linux."
+> "Setelah itu, kita perlu pindahkan file .c dan Makefile ke folder yang bisa diakses WSL."
+> "File kita ada di Windows, tapi WSL bisa akses folder Windows melalui path `/mnt/c/Users/...`"
+> "Kita tinggal navigate ke folder project kita dan compile program: `make` dan `./scheduler`"
 
 > "Program ini mengimplementasikan 4 algoritma: FCFS, SJF, SRT, dan Round Robin."
 

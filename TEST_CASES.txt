@@ -1,9 +1,3 @@
-#!/bin/bash
-
-# Test input for the scheduler program
-# This file demonstrates how to use the scheduler with sample processes
-
-cat << 'EOF'
 Sample Test Cases:
 ==================
 

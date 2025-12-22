@@ -1,37 +1,47 @@
 /*
  * ============================================================================
- *                      SIMULASI PENJADWALAN PROSES CPU
+ *                      simulasi penjadwalan proses cpu
  * ============================================================================
- * Program ini mensimulasikan 4 algoritma penjadwalan CPU:
- *   1. FCFS - First Come First Served
- *   2. SJF  - Shortest Job First (Non-preemptive)
- *   3. SRT  - Shortest Remaining Time (Preemptive)
- *   4. RR   - Round Robin
+ * ini program buat simulasi 4 algoritma scheduling cpu
+ * ada fcfs, sjf, srt, sama round robin
+ * tinggal pilih aja mau yang mana terus liat hasilnya
  * ============================================================================
  */
 
 #include <stdio.h>
 
 #define MAX_PROCESS 100
+#define MAX_GANTT 1000
 
 /* ============================================================================
- *                              STRUKTUR DATA
+ *                              struct data
  * ============================================================================ */
 
 typedef struct {
-    int id;               // Nomor proses
-    int arrival_time;     // Waktu tiba
-    int burst_time;       // Waktu eksekusi
-    int completion_time;  // Waktu selesai
-    int turnaround_time;  // Waktu putar (CT - AT)
-    int waiting_time;     // Waktu tunggu (TAT - BT)
-    int response_time;    // Waktu respon (pertama kali dieksekusi - AT)
-    int remaining_time;   // Sisa waktu (untuk SRT dan RR)
-    int is_started;       // Penanda: sudah pernah dieksekusi atau belum
+    int id;               // id proses
+    int arrival_time;     // kapan dateng
+    int burst_time;       // butuh brp lama dieksekusi
+    int completion_time;  // kapan selesai
+    int turnaround_time;  // total waktu dari dateng sampe kelar (ct - at)
+    int waiting_time;     // waktu nunggu (tat - bt)
+    int response_time;    // waktu pertama kali dieksekusi - at
+    int remaining_time;   // sisa waktu buat srt sama rr
+    int is_started;       // udah pernah jalan atau belum
 } Process;
 
+typedef struct {
+    int pid;              // process id, -1 kalo idle
+    int start_time;       // mulai kapan
+    int end_time;         // selesai kapan
+} GanttEntry;
+
+typedef struct {
+    GanttEntry entries[MAX_GANTT];
+    int count;
+} GanttChart;
+
 /* ============================================================================
- *                              FUNGSI TAMPILAN
+ *                              fungsi tampilan
  * ============================================================================ */
 
 void print_header(char *title) {
@@ -68,6 +78,57 @@ void print_statistics(double avg_response, double avg_turnaround, double avg_wai
     printf("  └───────────────────────────────────────────┘\n");
 }
 
+void print_gantt_chart(GanttChart *chart) {
+    if (chart->count == 0) return;
+    
+    printf("\n  Gantt Chart:\n");
+    printf("  ");
+    
+    // bikin border atas
+    for (int i = 0; i < chart->count; i++) {
+        printf("┌────");
+    }
+    printf("┐\n");
+    
+    // tampilin process id nya
+    printf("  ");
+    for (int i = 0; i < chart->count; i++) {
+        if (chart->entries[i].pid == -1) {
+            printf("│ -- ");
+        } else {
+            printf("│ P%-2d", chart->entries[i].pid);
+        }
+    }
+    printf("│\n");
+    
+    // border bawah
+    printf("  ");
+    for (int i = 0; i < chart->count; i++) {
+        printf("└────");
+    }
+    printf("┘\n");
+    
+    // timeline nya
+    printf("  ");
+    for (int i = 0; i < chart->count; i++) {
+        printf("%-5d", chart->entries[i].start_time);
+    }
+    printf("%d\n", chart->entries[chart->count - 1].end_time);
+}
+
+void gantt_add(GanttChart *chart, int pid, int start, int end) {
+    // kalo pid sama kayak sebelumnya, gabungin aja biar ga kebanyakan entry
+    if (chart->count > 0 && chart->entries[chart->count - 1].pid == pid &&
+        chart->entries[chart->count - 1].end_time == start) {
+        chart->entries[chart->count - 1].end_time = end;
+    } else {
+        chart->entries[chart->count].pid = pid;
+        chart->entries[chart->count].start_time = start;
+        chart->entries[chart->count].end_time = end;
+        chart->count++;
+    }
+}
+
 void print_menu() {
     printf("\n  ┌─────────────────────────────────────────┐\n");
     printf("  │  PILIH ALGORITMA PENJADWALAN           │\n");
@@ -83,7 +144,7 @@ void print_menu() {
 }
 
 /* ============================================================================
- *                              FUNGSI INPUT
+ *                              fungsi input
  * ============================================================================ */
 
 int input_processes(Process list[]) {
@@ -113,10 +174,10 @@ int input_processes(Process list[]) {
 }
 
 /* ============================================================================
- *                              FUNGSI UTILITAS
+ *                              fungsi utilitas
  * ============================================================================ */
 
-// Menyalin data proses dari array sumber ke array tujuan
+// copy data proses dari source ke destination
 void copy_processes(Process src[], Process dest[], int n) {
     for (int i = 0; i < n; i++) {
         dest[i].id = src[i].id;
@@ -131,7 +192,7 @@ void copy_processes(Process src[], Process dest[], int n) {
     }
 }
 
-// Menghitung rata-rata statistik
+// ngitung rata rata statistik
 void calculate_statistics(Process list[], int n, double *avg_rt, double *avg_tat, double *avg_wt) {
     double total_rt = 0, total_tat = 0, total_wt = 0;
     
@@ -146,7 +207,7 @@ void calculate_statistics(Process list[], int n, double *avg_rt, double *avg_tat
     *avg_wt = total_wt / n;
 }
 
-// Mengurutkan proses berdasarkan arrival time (bubble sort)
+// sort berdasarkan arrival time pake bubble sort
 void sort_by_arrival(Process list[], int n) {
     for (int i = 0; i < n - 1; i++) {
         for (int j = 0; j < n - i - 1; j++) {
@@ -160,10 +221,10 @@ void sort_by_arrival(Process list[], int n) {
 }
 
 /* ============================================================================
- *                     ALGORITMA 1: FCFS (First Come First Served)
+ *                     algoritma 1: fcfs (first come first served)
  * ============================================================================
- * Proses dieksekusi sesuai urutan kedatangan.
- * Non-preemptive: proses berjalan sampai selesai.
+ * yang dateng duluan dieksekusi duluan, simpel
+ * non-preemptive jadi sekali jalan ga bisa diinterupsi
  * ============================================================================ */
 
 void run_fcfs(Process original[], int n) {
@@ -171,44 +232,52 @@ void run_fcfs(Process original[], int n) {
     copy_processes(original, p, n);
     sort_by_arrival(p, n);
     
+    GanttChart chart = {.count = 0};
     int current_time = 0;
     
     for (int i = 0; i < n; i++) {
-        // Jika CPU idle, lompat ke waktu tiba proses berikutnya
+        // kalo cpu nganggur, skip ke waktu proses berikutnya dateng
         if (current_time < p[i].arrival_time) {
+            gantt_add(&chart, -1, current_time, p[i].arrival_time);
             current_time = p[i].arrival_time;
         }
         
         p[i].response_time = current_time - p[i].arrival_time;
+        int start = current_time;
         current_time += p[i].burst_time;
         p[i].completion_time = current_time;
         p[i].turnaround_time = p[i].completion_time - p[i].arrival_time;
         p[i].waiting_time = p[i].turnaround_time - p[i].burst_time;
+        
+        gantt_add(&chart, p[i].id, start, current_time);
     }
     
     double avg_rt, avg_tat, avg_wt;
     calculate_statistics(p, n, &avg_rt, &avg_tat, &avg_wt);
     
     print_table(p, n, "FCFS (First Come First Served)");
+    print_gantt_chart(&chart);
     print_statistics(avg_rt, avg_tat, avg_wt);
 }
 
 /* ============================================================================
- *                     ALGORITMA 2: SJF (Shortest Job First)
+ *                     algoritma 2: sjf (shortest job first)
  * ============================================================================
- * Proses dengan burst time terpendek dieksekusi duluan.
- * Non-preemptive: proses berjalan sampai selesai.
+ * yang burst time nya paling kecil dieksekusi duluan
+ * non-preemptive juga, sekali jalan sampe kelar
  * ============================================================================ */
 
 void run_sjf(Process original[], int n) {
     Process p[MAX_PROCESS];
     copy_processes(original, p, n);
     
+    GanttChart chart = {.count = 0};
     int completed = 0;
     int current_time = 0;
+    int idle_start = -1;
     
     while (completed < n) {
-        // Cari proses dengan burst time terpendek yang sudah tiba
+        // cari proses yg burst time paling kecil dan udah dateng
         int shortest = -1;
         int min_burst = 999999;
         
@@ -224,14 +293,21 @@ void run_sjf(Process original[], int n) {
         }
         
         if (shortest != -1) {
+            if (idle_start != -1) {
+                gantt_add(&chart, -1, idle_start, current_time);
+                idle_start = -1;
+            }
             p[shortest].response_time = current_time - p[shortest].arrival_time;
+            int start = current_time;
             current_time += p[shortest].burst_time;
             p[shortest].completion_time = current_time;
             p[shortest].turnaround_time = p[shortest].completion_time - p[shortest].arrival_time;
             p[shortest].waiting_time = p[shortest].turnaround_time - p[shortest].burst_time;
+            gantt_add(&chart, p[shortest].id, start, current_time);
             completed++;
         } else {
-            // Tidak ada proses yang siap, maju waktu
+            // gaada proses siap, naikin waktu aja
+            if (idle_start == -1) idle_start = current_time;
             current_time++;
         }
     }
@@ -240,25 +316,27 @@ void run_sjf(Process original[], int n) {
     calculate_statistics(p, n, &avg_rt, &avg_tat, &avg_wt);
     
     print_table(p, n, "SJF (Shortest Job First)");
+    print_gantt_chart(&chart);
     print_statistics(avg_rt, avg_tat, avg_wt);
 }
 
 /* ============================================================================
- *                     ALGORITMA 3: SRT (Shortest Remaining Time)
+ *                     algoritma 3: srt (shortest remaining time)
  * ============================================================================
- * Proses dengan sisa waktu terpendek dieksekusi duluan.
- * Preemptive: proses bisa diinterupsi jika ada proses lain dengan sisa waktu lebih pendek.
+ * mirip sjf tapi preemptive, jadi yang remaining time paling kecil jalan duluan
+ * bisa diinterupsi kalo ada proses baru yg remaining nya lebih kecil
  * ============================================================================ */
 
 void run_srt(Process original[], int n) {
     Process p[MAX_PROCESS];
     copy_processes(original, p, n);
     
+    GanttChart chart = {.count = 0};
     int completed = 0;
     int current_time = 0;
     
     while (completed < n) {
-        // Cari proses dengan remaining time terpendek yang sudah tiba
+        // cari yg remaining time paling kecil
         int shortest = -1;
         int min_remaining = 999999;
         
@@ -274,17 +352,18 @@ void run_srt(Process original[], int n) {
         }
         
         if (shortest != -1) {
-            // Catat response time saat pertama kali dieksekusi
+            // catat response time pas pertama kali jalan
             if (!p[shortest].is_started) {
                 p[shortest].response_time = current_time - p[shortest].arrival_time;
                 p[shortest].is_started = 1;
             }
             
-            // Eksekusi 1 unit waktu
+            // jalan 1 unit waktu
             p[shortest].remaining_time--;
+            gantt_add(&chart, p[shortest].id, current_time, current_time + 1);
             current_time++;
             
-            // Cek apakah proses selesai
+            // cek kalo udah kelar
             if (p[shortest].remaining_time == 0) {
                 p[shortest].completion_time = current_time;
                 p[shortest].turnaround_time = p[shortest].completion_time - p[shortest].arrival_time;
@@ -292,6 +371,7 @@ void run_srt(Process original[], int n) {
                 completed++;
             }
         } else {
+            gantt_add(&chart, -1, current_time, current_time + 1);
             current_time++;
         }
     }
@@ -300,14 +380,15 @@ void run_srt(Process original[], int n) {
     calculate_statistics(p, n, &avg_rt, &avg_tat, &avg_wt);
     
     print_table(p, n, "SRT (Shortest Remaining Time)");
+    print_gantt_chart(&chart);
     print_statistics(avg_rt, avg_tat, avg_wt);
 }
 
 /* ============================================================================
- *                     ALGORITMA 4: RR (Round Robin)
+ *                     algoritma 4: rr (round robin)
  * ============================================================================
- * Setiap proses mendapat jatah waktu (quantum) yang sama secara bergiliran.
- * Preemptive: proses diinterupsi setelah quantum habis.
+ * tiap proses dapet jatah waktu sama (quantum) gantian
+ * kalo quantum habis, ganti proses lain dulu
  * ============================================================================ */
 
 void run_round_robin(Process original[], int n, int quantum) {
@@ -315,7 +396,9 @@ void run_round_robin(Process original[], int n, int quantum) {
     copy_processes(original, p, n);
     sort_by_arrival(p, n);
     
-    // Antrian sederhana menggunakan array
+    GanttChart chart = {.count = 0};
+    
+    // queue pake array biasa aja
     int queue[MAX_PROCESS * 100];
     int front = 0, rear = 0;
     
@@ -323,7 +406,7 @@ void run_round_robin(Process original[], int n, int quantum) {
     int current_time = 0;
     int in_queue[MAX_PROCESS] = {0};
     
-    // Masukkan proses yang sudah tiba di waktu 0
+    // masukin proses yang udah dateng di waktu 0
     for (int i = 0; i < n; i++) {
         if (p[i].arrival_time <= current_time) {
             queue[rear++] = i;
@@ -335,18 +418,20 @@ void run_round_robin(Process original[], int n, int quantum) {
         if (front < rear) {
             int i = queue[front++];
             
-            // Catat response time saat pertama kali dieksekusi
+            // catat response time pas pertama jalan
             if (!p[i].is_started) {
                 p[i].response_time = current_time - p[i].arrival_time;
                 p[i].is_started = 1;
             }
             
-            // Eksekusi selama quantum atau sampai selesai
+            // jalan selama quantum atau sampe kelar
             int exec_time = (p[i].remaining_time <= quantum) ? p[i].remaining_time : quantum;
+            int start = current_time;
             p[i].remaining_time -= exec_time;
             current_time += exec_time;
+            gantt_add(&chart, p[i].id, start, current_time);
             
-            // Masukkan proses baru yang tiba selama eksekusi
+            // cek ada proses baru yang dateng ga
             for (int j = 0; j < n; j++) {
                 int has_arrived = p[j].arrival_time <= current_time;
                 int not_in_queue = !in_queue[j];
@@ -358,18 +443,18 @@ void run_round_robin(Process original[], int n, int quantum) {
                 }
             }
             
-            // Cek apakah proses selesai
+            // cek udah kelar belom
             if (p[i].remaining_time == 0) {
                 p[i].completion_time = current_time;
                 p[i].turnaround_time = p[i].completion_time - p[i].arrival_time;
                 p[i].waiting_time = p[i].turnaround_time - p[i].burst_time;
                 completed++;
             } else {
-                // Belum selesai, masukkan kembali ke antrian
+                // belom kelar, masukin lagi ke queue
                 queue[rear++] = i;
             }
         } else {
-            // Antrian kosong, cari proses berikutnya yang akan tiba
+            // queue kosong, cari proses selanjutnya yg bakal dateng
             int next_arrival = 999999;
             int next_idx = -1;
             
@@ -381,6 +466,7 @@ void run_round_robin(Process original[], int n, int quantum) {
             }
             
             if (next_idx != -1) {
+                gantt_add(&chart, -1, current_time, next_arrival);
                 current_time = next_arrival;
                 queue[rear++] = next_idx;
                 in_queue[next_idx] = 1;
@@ -394,11 +480,12 @@ void run_round_robin(Process original[], int n, int quantum) {
     char title[50];
     sprintf(title, "Round Robin (Quantum = %d)", quantum);
     print_table(p, n, title);
+    print_gantt_chart(&chart);
     print_statistics(avg_rt, avg_tat, avg_wt);
 }
 
 /* ============================================================================
- *                              FUNGSI UTAMA
+ *                              main function
  * ============================================================================ */
 
 int main() {
@@ -407,11 +494,11 @@ int main() {
     
     print_header("SIMULASI PENJADWALAN PROSES CPU");
     
-    // Input data proses
+    // input data proses dulu
     n = input_processes(processes);
     printf("\n  ✓ Data %d proses berhasil disimpan!\n", n);
     
-    // Menu utama
+    // loop menu utama
     while (1) {
         print_menu();
         scanf("%d", &choice);
