@@ -1,0 +1,18 @@
+Project Operating System
+
+Kelas: PPTI 19
+Tema: Process Scheduling
+Anggota:
+    - Arjuna Andio (2702364452)
+    - Jelvis Anggono (2702365190)
+    - Jonathan Fortino Chandra (2702363784)
+
+Pengumpulan:
+    - IDENTITAS_KELOMPOK.txt: Identitas Kelompok
+    - Video-OS.mp4: Presentasi Video Kelompok
+    - scheduler.c: Source Code Process Scheduling
+    - Makefile: Compiler recipe
+
+Referensi Pembelajaran:
+    - https://www.youtube.com/watch?v=uTVwmz7Gnvo
+    - https://youtu.be/2h3eWaPx8SA?si=9bprOur0H_Q1dj1B
