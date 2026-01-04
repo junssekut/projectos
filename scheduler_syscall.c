@@ -12,6 +12,7 @@
 #include <linux/kernel.h>
 #include <linux/syscalls.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
 
 #define MAX_PROCESS 10
 #define MAX_GANTT 100
@@ -375,16 +376,16 @@ static void print_gantt(struct gantt_chart *chart)
 
 SYSCALL_DEFINE5(scheduler, int, algo, int, n, int __user *, arrivals, int __user *, bursts, int, quantum)
 {
-    struct sched_process p[MAX_PROCESS];
-    struct gantt_chart chart = {.count = 0};
-    int arr[MAX_PROCESS], bur[MAX_PROCESS];
-    int i;
+    struct sched_process *p;
+    struct gantt_chart *chart;
+    int *arr, *bur;
+    int i, ret = 0;
     const char *algo_names[] = {"", "FCFS (First Come First Served)", 
                                 "SJF (Shortest Job First)", 
                                 "SRT (Shortest Remaining Time)", 
                                 "Round Robin"};
     
-    // validasi input
+    // validasi input dulu sebelum alokasi
     if (n <= 0 || n > MAX_PROCESS) {
         printk(KERN_WARNING "scheduler: jumlah proses ga valid n=%d (max=%d)\n", n, MAX_PROCESS);
         return -EINVAL;
@@ -395,11 +396,30 @@ SYSCALL_DEFINE5(scheduler, int, algo, int, n, int __user *, arrivals, int __user
         return -EINVAL;
     }
     
+    // alokasi memori pake kmalloc (bukan stack)
+    p = kmalloc(sizeof(struct sched_process) * MAX_PROCESS, GFP_KERNEL);
+    chart = kmalloc(sizeof(struct gantt_chart), GFP_KERNEL);
+    arr = kmalloc(sizeof(int) * MAX_PROCESS, GFP_KERNEL);
+    bur = kmalloc(sizeof(int) * MAX_PROCESS, GFP_KERNEL);
+    
+    if (!p || !chart || !arr || !bur) {
+        printk(KERN_ERR "scheduler: gagal alokasi memori\n");
+        ret = -ENOMEM;
+        goto cleanup;
+    }
+    
+    // init chart
+    chart->count = 0;
+    
     // copy data dari user space ke kernel space
-    if (copy_from_user(arr, arrivals, sizeof(int) * n))
-        return -EFAULT;
-    if (copy_from_user(bur, bursts, sizeof(int) * n))
-        return -EFAULT;
+    if (copy_from_user(arr, arrivals, sizeof(int) * n)) {
+        ret = -EFAULT;
+        goto cleanup;
+    }
+    if (copy_from_user(bur, bursts, sizeof(int) * n)) {
+        ret = -EFAULT;
+        goto cleanup;
+    }
     
     // inisialisasi struct process
     for (i = 0; i < n; i++) {
@@ -416,15 +436,21 @@ SYSCALL_DEFINE5(scheduler, int, algo, int, n, int __user *, arrivals, int __user
     
     // jalanin algoritma yang dipilih
     switch (algo) {
-        case ALGO_FCFS: run_fcfs(p, n, &chart); break;
-        case ALGO_SJF:  run_sjf(p, n, &chart); break;
-        case ALGO_SRT:  run_srt(p, n, &chart); break;
-        case ALGO_RR:   run_rr(p, n, &chart, quantum > 0 ? quantum : 2); break;
+        case ALGO_FCFS: run_fcfs(p, n, chart); break;
+        case ALGO_SJF:  run_sjf(p, n, chart); break;
+        case ALGO_SRT:  run_srt(p, n, chart); break;
+        case ALGO_RR:   run_rr(p, n, chart, quantum > 0 ? quantum : 2); break;
     }
     
     // print hasil ke dmesg
     print_results(p, n, algo_names[algo]);
-    print_gantt(&chart);
+    print_gantt(chart);
+
+cleanup:
+    kfree(p);
+    kfree(chart);
+    kfree(arr);
+    kfree(bur);
     
-    return 0;
+    return ret;
 }
