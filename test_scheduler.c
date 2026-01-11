@@ -11,7 +11,7 @@
  * 
  * compile: gcc test_scheduler.c -o test_scheduler
  * run: ./test_scheduler
- * liat hasil: dmesg | tail -50
+ * liat hasil: dmesg | tail -80
  * ============================================================================
  */
 
@@ -19,8 +19,9 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
-// ganti nomor ini sesuai yg ada di syscall_64.tbl
+// (wajib sama dengan syscall_64.tbl)
 #define __NR_scheduler 548
 
 #define MAX_PROCESS 10
@@ -274,13 +275,17 @@ void test_fcfs() {
     printf("\n  Menjalankan syscall scheduler (FCFS)...\n");
     read_processes();
     
+    errno = 0;
     long ret = syscall(__NR_scheduler, 1, n, arrivals, bursts, 0);
     
     if (ret == 0) {
         printf("\n  ✓ FCFS test selesai!\n");
         printf("  → Jalankan 'dmesg | tail -30' untuk lihat hasil\n");
     } else {
-        printf("\n  ✗ Error! Return code: %ld\n", ret);
+        printf("\n  ✗ Error! Return code: %ld, errno: %d (%s)\n", ret, errno, strerror(errno));
+        if (errno == ENOSYS) printf("     → Syscall %d tidak ada di kernel ini!\n", __NR_scheduler);
+        else if (errno == EFAULT) printf("     → Bad address - masalah pointer\n");
+        else if (errno == EINVAL) printf("     → Invalid argument\n");
     }
 }
 
@@ -298,13 +303,17 @@ void test_sjf() {
     printf("\n  Menjalankan syscall scheduler (SJF)...\n");
     read_processes();
     
+    errno = 0;
     long ret = syscall(__NR_scheduler, 2, n, arrivals, bursts, 0);
     
     if (ret == 0) {
         printf("\n  ✓ SJF test selesai!\n");
         printf("  → Jalankan 'dmesg | tail -30' untuk lihat hasil\n");
     } else {
-        printf("\n  ✗ Error! Return code: %ld\n", ret);
+        printf("\n  ✗ Error! Return code: %ld, errno: %d (%s)\n", ret, errno, strerror(errno));
+        if (errno == ENOSYS) printf("     → Syscall %d tidak ada di kernel ini!\n", __NR_scheduler);
+        else if (errno == EFAULT) printf("     → Bad address - masalah pointer\n");
+        else if (errno == EINVAL) printf("     → Invalid argument\n");
     }
 }
 
@@ -322,13 +331,17 @@ void test_srt() {
     printf("\n  Menjalankan syscall scheduler (SRT)...\n");
     read_processes();
     
+    errno = 0;
     long ret = syscall(__NR_scheduler, 3, n, arrivals, bursts, 0);
     
     if (ret == 0) {
         printf("\n  ✓ SRT test selesai!\n");
         printf("  → Jalankan 'dmesg | tail -30' untuk lihat hasil\n");
     } else {
-        printf("\n  ✗ Error! Return code: %ld\n", ret);
+        printf("\n  ✗ Error! Return code: %ld, errno: %d (%s)\n", ret, errno, strerror(errno));
+        if (errno == ENOSYS) printf("     → Syscall %d tidak ada di kernel ini!\n", __NR_scheduler);
+        else if (errno == EFAULT) printf("     → Bad address - masalah pointer\n");
+        else if (errno == EINVAL) printf("     → Invalid argument\n");
     }
 }
 
@@ -355,13 +368,17 @@ void test_round_robin() {
     printf("\n  Menjalankan syscall scheduler (Round Robin, Q=%d)...\n", quantum);
     read_processes();
     
+    errno = 0;
     long ret = syscall(__NR_scheduler, 4, n, arrivals, bursts, quantum);
     
     if (ret == 0) {
         printf("\n  ✓ Round Robin test selesai!\n");
         printf("  → Jalankan 'dmesg | tail -30' untuk lihat hasil\n");
     } else {
-        printf("\n  ✗ Error! Return code: %ld\n", ret);
+        printf("\n  ✗ Error! Return code: %ld, errno: %d (%s)\n", ret, errno, strerror(errno));
+        if (errno == ENOSYS) printf("     → Syscall %d tidak ada di kernel ini!\n", __NR_scheduler);
+        else if (errno == EFAULT) printf("     → Bad address - masalah pointer\n");
+        else if (errno == EINVAL) printf("     → Invalid argument\n");
     }
 }
 
