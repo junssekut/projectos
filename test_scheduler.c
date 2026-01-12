@@ -22,6 +22,7 @@
 #include <errno.h>
 
 // (wajib sama dengan syscall_64.tbl)
+// Kernel 6.6: 453 is last syscall, 512-547 reserved, use 454 for custom syscalls
 #define __NR_scheduler 548
 
 #define MAX_PROCESS 10
